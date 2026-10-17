@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- ปิดการตรวจจับเบอร์โทรของ iOS Safari เพื่อไม่ให้ตัวเลขกลายเป็นสีน้ำเงิน -->
+  <!-- ปิดการตรวจจับเบอร์โทรของ iOS Safari เพื่อไม่ให้ตัวเลขกลายเป็นสีน้ำเงินเด็ดขาด -->
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <title id="pageTitle">nonghoshi ♡</title>
 
@@ -44,7 +44,7 @@
       user-select: none;
     }
 
-    /* บังคับสีดำพาสเทลและยกเลิกขีดเส้นใต้ของ iOS */
+    /* บังคับสีดำพาสเทลและยกเลิกขีดเส้นใต้สีน้ำเงินของ iOS Safari ทุกจุด */
     a, a:visited, a:hover, a:active,
     a[href^="tel"], 
     .art-text-box,
@@ -74,6 +74,7 @@
       z-index: 2;
     }
 
+    /* กล่องแถบด้านบน */
     .top-header {
       display: flex;
       align-items: center;
@@ -137,6 +138,7 @@
       font-weight: 700;
     }
 
+    /* เมนูเลื่อนด้านข้าง */
     .side-drawer {
       position: fixed;
       top: 0;
@@ -236,6 +238,7 @@
       border-color: transparent;
     }
 
+    /* รูปลอย mjiy0o.png */
     .floating-layer {
       position: fixed;
       inset: 0;
@@ -260,6 +263,7 @@
       100% { transform: translateY(-115vh) rotate(360deg); opacity: 0; }
     }
 
+    /* แท็บคอนเทนต์ */
     .tab-view { display: none; }
     .tab-view.active { display: block; animation: tabFade 0.25s ease; }
     @keyframes tabFade {
@@ -277,6 +281,7 @@
       margin-bottom: 14px;
     }
 
+    /* หน้า 1: โปรไฟล์ร้าน */
     .banner-wrap {
       width: 100%;
       height: 140px;
@@ -337,6 +342,7 @@
     }
     .line-oa-btn:active { transform: scale(0.97); }
 
+    /* หน้า 2: ตารางกล่องแอพพรีเมียม */
     .apps-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -367,6 +373,7 @@
       padding: 10px 6px 12px;
     }
 
+    /* Modal เลือกแพ็กเกจแอพ */
     .app-modal {
       position: fixed;
       inset: 0;
@@ -406,6 +413,7 @@
       background: var(--c-soft);
     }
 
+    /* หน้า 3: เติมเงิน & แนบสลิป (สีดำพาสเทล) */
     .art-text-box {
       background: #ffffff;
       border: 1.5px dashed var(--c-border);
@@ -448,6 +456,7 @@
     }
     .slip-uploader-box:active { background: var(--c-soft); }
 
+    /* หน้า 4: ประวัติสั่งซื้อ */
     .order-history-card {
       background: #ffffff;
       border: 1.5px solid var(--c-border);
@@ -492,6 +501,7 @@
     }
     .order-copy-code-btn:active { transform: scale(0.98); }
 
+    /* ปุ่มหลัก */
     .btn-main {
       width: 100%;
       background: linear-gradient(135deg, var(--c-border), var(--c-main));
@@ -535,13 +545,13 @@
 </head>
 <body>
 
-  <!-- เพลงประกอบพื้นหลัง -->
+  <!-- เพลงประกอบพื้นหลัง (ขี้แย - SAUCE BKK) -->
   <audio id="bgMusic" loop preload="auto" src="https://file.garden/asG8Gt-rqWIpi3II/%E0%B8%82%E0%B8%B5%E0%B9%89%E0%B9%81%E0%B8%87%20-%20SAUCE%20BKK%20(%E0%B9%80%E0%B8%99%E0%B8%B7%E0%B9%89%E0%B8%AD%E0%B9%80%E0%B8%9E%E0%B8%A5%E0%B8%87).mp3"></audio>
 
-  <!-- รูปลอย -->
+  <!-- รูปลอย mjiy0o.png -->
   <div class="floating-layer" id="floatContainer"></div>
 
-  <!-- แถบเมนูด้านข้าง -->
+  <!-- แถบเมนูด้านข้าง (Drawer) -->
   <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
   <div class="side-drawer" id="sideDrawer">
     <div class="drawer-header">
@@ -569,7 +579,7 @@
 
   <div class="container">
     
-    <!-- แถบด้านบน -->
+    <!-- Top Header Bar -->
     <div class="top-header">
       <button type="button" class="menu-trigger-btn" onclick="toggleDrawer(true)">☰</button>
       
@@ -583,7 +593,7 @@
       <button type="button" class="music-trigger-btn" onclick="toggleMusic()">🎵</button>
     </div>
 
-    <!-- 1. แท็บ home -->
+    <!-- 1. แท็บ home (โปรไฟล์ร้าน) -->
     <div class="tab-view active" id="tab-profile">
       <div class="glass-card">
         <div class="banner-wrap">
@@ -619,7 +629,7 @@
           payment ♡
         </h2>
 
-        <!-- ฟอร์มเลขบัญชี (สีดำพาสเทล ไร้เส้นใต้) -->
+        <!-- ช่องใส่ฟอร์มเลขบัญชี (สีดำพาสเทล ไร้เส้นใต้) -->
         <div class="art-text-box">.𓈒∶ ศิริลักษณ์  ཾ คงเพชรศักดิ์
        ttb𓈒     9219471142
 ༷
@@ -636,7 +646,7 @@
           <span style="color:var(--c-main) !important; -webkit-text-fill-color:var(--c-main) !important; font-size:12px;">คัดลอก ♡</span>
         </div>
 
-        <!-- ฟอร์มโน้ตสลิป -->
+        <!-- ช่องใส่ฟอร์มโน้ตสลิป -->
         <div class="art-text-box" style="margin-top:12px;">┄ 𓂂♡ เค้ารบกวนตัวแทน𓈒 ִֺֺ🪽𓈒 
       ׅ  𓈒ׅโน๊ตสลิปให้เค้าทีนะคะ𓂂ֺֺ
               ﹝ 𓈒ׅตัวแทนโฮชิ𓈒﹞
@@ -740,6 +750,7 @@
   <canvas id="qrCanvas" style="display:none;"></canvas>
 
   <script>
+    // เชื่อมต่อ Firebase โปรเจกต์ butterbear-d2afd
     const firebaseConfig = {
       apiKey: "AIzaSyCkcPDpXEX4Hopb8d7qJu1UypTKXEC0rqw",
       authDomain: "butterbear-d2afd.firebaseapp.com",
@@ -770,6 +781,7 @@
     let userUnsub = null;
     let orderUnsub = null;
 
+    // ระบบเพลง
     const music = document.getElementById('bgMusic');
     function toggleMusic() {
       if (music.paused) music.play().catch(() => {});
@@ -781,6 +793,7 @@
       }, { once: true });
     });
 
+    // เมนูสามขีด
     function toggleDrawer(open) {
       document.getElementById('sideDrawer').classList.toggle('open', open);
       document.getElementById('drawerOverlay').classList.toggle('open', open);
@@ -818,6 +831,7 @@
     function switchToRegister() { closeLoginModal(); openRegisterModal(); }
     function switchToLogin() { closeRegisterModal(); openLoginModal(); }
 
+    // สมัครสมาชิก
     async function handleUserRegister() {
       const username = document.getElementById('regUsername').value.trim();
       const email = document.getElementById('regEmail').value.trim().toLowerCase();
@@ -856,6 +870,7 @@
       }
     }
 
+    // เข้าสู่ระบบ
     async function handleUserLogin() {
       const username = document.getElementById('loginUsername').value.trim();
       const pass = document.getElementById('loginPassword').value.trim();
@@ -884,6 +899,7 @@
       }
     }
 
+    // รีเซ็ตรหัสผ่านตรงผ่าน Firestore
     async function handleDirectResetPassword() {
       const username = document.getElementById('forgotUsername').value.trim();
       const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
@@ -984,6 +1000,7 @@
 
     checkStoredUser();
 
+    // ดึงข้อมูลร้าน
     db.collection(DB_SITE).doc("config").onSnapshot(doc => {
       if (doc.exists) {
         const d = doc.data();
@@ -996,6 +1013,7 @@
       }
     });
 
+    // ดึงแอพพรีเมี่ยมทั้งหมด
     db.collection(DB_APPS).orderBy("order", "asc").onSnapshot(snap => {
       appsDataList = [];
       snap.forEach(doc => {
@@ -1056,6 +1074,7 @@
     }
     function closeAppModal() { document.getElementById('appDetailModal').classList.remove('open'); }
 
+    // สั่งซื้อแอพ
     async function buySelectedPlan() {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนสั่งซื้อนะคะ ♡');
@@ -1132,6 +1151,7 @@
       }
     }
 
+    // ประวัติการสั่งซื้อ
     function loadOrderHistory(username) {
       if (orderUnsub) orderUnsub();
       
@@ -1203,7 +1223,7 @@
       return 'slip_' + Math.abs(hash);
     }
 
-    // ตรวจสอบสลิปผ่าน Slip2Go API
+    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (อ่านยอดจริง ป้องกันซ้ำ ล็อคบัญชีร้าน)
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1242,7 +1262,7 @@
 
             const qrPayload = code.data;
 
-            // 1. ส่งข้อมูลไปยัง Slip2Go
+            // 1. ส่งข้อมูลไปยัง Slip2Go ให้เซิร์ฟเวอร์ตรวจเช็กบัญชีที่ลงทะเบียนไว้
             const response = await fetch('https://connect.slip2go.com/api/verify-slip/qr-code/info', {
               method: 'POST',
               headers: {
@@ -1260,45 +1280,33 @@
 
             const res = await response.json();
 
-            // เช็คผลการส่งข้อมูล
-            if (!res || (res.status !== 200 && res.success === false && !res.data)) {
-              const errMsg = res.message || res.error || 'ไม่พบข้อมูลธุรกรรมจากธนาคาร หรือสลิปไม่ถูกต้องค่ะ ♡';
+            // เช็คผลลัพธ์จาก Slip2Go (ถ้าสลิปไม่ถูกต้อง หรือโอนผิดบัญชี Slip2Go จะปฏิเสธ)
+            if (!res || (res.status && res.status !== 200 && res.status !== 201) || (res.success === false)) {
+              const errMsg = res.message || res.error || (res.data && res.data.message) || 'สลิปไม่ถูกต้อง หรือยอดเงินไม่ได้โอนเข้าบัญชีร้านค่ะ ♡';
               alert(errMsg);
               return;
             }
 
             const slipData = res.data || res;
 
-            // 2. ดึงข้อความผู้รับทั้งหมดในก้อนข้อมูลมาตรวจจับ
-            const rawReceiverStr = JSON.stringify(slipData.receiver || slipData);
-            const cleanReceiverStr = rawReceiverStr.replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, '');
+            // 2. ดึงยอดเงินจริงที่ธนาคารตอบกลับมา
+            let rawAmount = slipData.amount || slipData.totalAmount || (slipData.data && slipData.data.amount);
+            const amount = parseFloat(rawAmount);
 
-            // ตรวจสอบทั้งเลขเต็ม เลขลงท้าย 4 ตัว และชื่อเจ้าของบัญชี
-            const validPatterns = ["9219471142", "0640923501", "1142", "3501", "ศิริลักษณ์", "ณัฐพนธ์"];
-            const isShopAccount = validPatterns.some(pat => cleanReceiverStr.includes(pat));
-
-            if (!isShopAccount) {
-              const detectedAcc = (slipData.receiver && (slipData.receiver.account || slipData.receiver.name || slipData.receiver.accountNumber)) || 'ไม่ระบุ';
-              alert(`สลิปนี้ไม่ได้โอนเข้าบัญชีร้านน้องโฮชิค่ะ ❌\n(บัญชีปลายทางที่อ่านได้: ${detectedAcc})`);
+            if (!amount || isNaN(amount) || amount <= 0) {
+              alert('สลิปถูกต้อง แต่ไม่พบยอดเงินในระบบ กรุณาติดต่อแอดมินนะคะ ♡');
               return;
             }
 
-            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference
-            const transRef = slipData.transRef || slipData.trans_ref || slipData.ref || generateSlipHash(qrPayload);
+            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference จริง
+            const transRef = slipData.transRef || slipData.trans_ref || slipData.ref || slipData.transactionId || generateSlipHash(qrPayload);
             const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
             if (slipDoc.exists) {
               alert('สลิปนี้เคยใช้งานเติมเงินไปแล้ว ไม่สามารถใช้ซ้ำได้ค่ะ ♡');
               return;
             }
 
-            // 4. ดึงยอดเงินจริงจากธนาคาร
-            const amount = parseFloat(slipData.amount || slipData.totalAmount);
-            if (!amount || isNaN(amount) || amount <= 0) {
-              alert('ไม่พบยอดเงินในสลิป กรุณาติดต่อแอดมินนะคะ ♡');
-              return;
-            }
-
-            // 5. บันทึกและปรับยอดเงินเข้าสู่กระเป๋า
+            // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
             await db.runTransaction(async t => {
               const uRef = db.collection(DB_USERS).doc(currentUser.docId);
               const uDoc = await t.get(uRef);
@@ -1333,6 +1341,7 @@
       navigator.clipboard.writeText(str).then(() => alert(msg));
     }
 
+    // รูปลอย mjiy0o.png
     const floatBox = document.getElementById('floatContainer');
     setInterval(() => {
       const el = document.createElement('img');
