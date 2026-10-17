@@ -772,7 +772,6 @@
 
     // คีย์ Slip2Go API
     const SLIP2GO_API_KEY = "Hz8S2txK1M21vZ93S_olrfGit8uORKU8_OgAZrQlmOQ=";
-    const SLIP2GO_SHOP_NAME = "nongshi";
 
     let currentUser = null;
     let userData = { balance: 0, role: "user" };
@@ -1246,7 +1245,7 @@
       return null;
     }
 
-    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (ส่งทั้ง Token และชื่อร้าน nongshi)
+    // ตรวจสอบสลิปผ่าน Slip2Go API (รูปแบบตรงตามคู่มือ 100%)
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1285,23 +1284,15 @@
 
             const qrPayload = code.data;
 
-            // 1. ส่งข้อมูลไปยัง Slip2Go (ส่งทั้ง Secret Key และชื่อร้าน nongshi)
+            // ส่งข้อมูลไปยัง Slip2Go ด้วย Authorization: Bearer {secretKey} ตามคู่มือทางการ
             const response = await fetch('https://connect.slip2go.com/api/verify-slip/qr-code/info', {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${SLIP2GO_API_KEY}`,
-                'secret': SLIP2GO_API_KEY,
-                'x-api-key': SLIP2GO_API_KEY,
-                'shop': SLIP2GO_SHOP_NAME,
-                'shop-name': SLIP2GO_SHOP_NAME
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify({ 
-                payload: qrPayload,
-                qrcode: qrPayload,
-                data: qrPayload,
-                shop: SLIP2GO_SHOP_NAME,
-                shopName: SLIP2GO_SHOP_NAME
+                payload: qrPayload
               })
             });
 
@@ -1314,14 +1305,14 @@
               return;
             }
 
-            // 2. ดึงยอดเงินจริงที่ Slip2Go ส่งมา
+            // ดึงยอดเงินจริงที่ Slip2Go ส่งมา
             let amount = findAmountDeep(res);
             if (!amount || isNaN(amount) || amount <= 0) {
               alert('สลิปถูกต้อง แต่ไม่สามารถอ่านยอดเงินได้ กรุณาติดต่อแอดมินนะคะ ♡');
               return;
             }
 
-            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference จริง
+            // ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference จริง
             const slipData = res.data || res;
             const transRef = slipData.transRef || slipData.trans_ref || slipData.ref || slipData.transactionId || generateSlipHash(qrPayload);
             const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
@@ -1330,7 +1321,7 @@
               return;
             }
 
-            // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
+            // บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
             await db.runTransaction(async t => {
               const uRef = db.collection(DB_USERS).doc(currentUser.docId);
               const uDoc = await t.get(uRef);
