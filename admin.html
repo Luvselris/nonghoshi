@@ -86,7 +86,7 @@
 <body>
 
 <div class="container">
-  <!-- ล็อกอินแอดมิน (แสดงเป็น email และ password ตามข้อ 12) -->
+  <!-- ล็อกอินแอดมิน (แสดงเป็น email และ password) -->
   <div class="card" id="loginBox">
     <div class="title">Admin Dashboard ♡ nonghoshi</div>
     <div class="field-group">
@@ -217,7 +217,6 @@
 </div>
 
 <script>
-  // เชื่อมต่อ Firebase โปรเจกต์ butterbear-d2afd
   const firebaseConfig = {
     apiKey: "AIzaSyCkcPDpXEX4Hopb8d7qJu1UypTKXEC0rqw",
     authDomain: "butterbear-d2afd.firebaseapp.com",
@@ -235,7 +234,6 @@
   const DB_APPS = "nonghoshi_apps";
   const DB_USERS = "nonghoshi_users";
 
-  // ข้อมูลแอดมินตามข้อ 12
   let adminUser = "nongshi";
   let adminEmail = "wxrqsrz@gmail.com";
   let adminPass = "wxrqsrz1234";
@@ -273,7 +271,6 @@
     const inputVal = document.getElementById('loginInputUser').value.trim();
     const p = document.getElementById('loginInputPass').value.trim();
 
-    // อนุญาตให้ล็อกอินได้ทั้งด้วย email หรือ username
     const isUserMatch = (inputVal === adminUser || inputVal === adminEmail);
 
     if (isUserMatch && p === adminPass) {
@@ -446,7 +443,6 @@
     }
   }
 
-  // เติมเงินลัดเข้า nongshi
   async function quickTopupAdmin() {
     const amt = parseFloat(document.getElementById('quickAdminAmount').value.trim());
     if (!amt || isNaN(amt) || amt <= 0) return alert('กรุณากรอกยอดเงินให้ถูกต้องค่ะ ♡');
