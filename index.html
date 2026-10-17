@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- ปิดการตรวจจับเบอร์โทรของ iOS Safari เพื่อไม่ให้ตัวเลขกลายเป็นสีน้ำเงินเด็ดขาด -->
+  <!-- ปิดการตรวจจับเบอร์โทรของ iOS Safari เพื่อไม่ให้ตัวเลขกลายเป็นสีน้ำเงิน -->
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <title id="pageTitle">nonghoshi ♡</title>
 
@@ -1223,6 +1223,51 @@
       return 'slip_' + Math.abs(hash);
     }
 
+    // ฟังก์ชันช่วยดึงยอดเงินจาก QR หาก API ธนาคารตอบฟิลด์ไม่ตรง
+    function parseSlipAmountFromQR(qrData) {
+      if (!qrData || typeof qrData !== 'string') return null;
+      let index = 0;
+      while (index < qrData.length - 4) {
+        const tag = qrData.substr(index, 2);
+        const length = parseInt(qrData.substr(index + 2, 2), 10);
+        if (isNaN(length)) break;
+        const value = qrData.substr(index + 4, length);
+        if (tag === '54') {
+          const parsed = parseFloat(value);
+          if (!isNaN(parsed) && parsed > 0) return parsed;
+        }
+        index += 4 + length;
+      }
+      const match = qrData.match(/54\d{2}([0-9]+(?:\.[0-9]{1,2})?)/);
+      if (match && match[1]) {
+        const parsed = parseFloat(match[1]);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      return null;
+    }
+
+    // ฟังก์ชันช่วยเจาะหายอดเงินจาก JSON ทุกระดับชั้น
+    function findAmountDeep(obj) {
+      if (!obj) return null;
+      if (typeof obj === 'number' && obj > 0) return obj;
+      if (typeof obj !== 'object') return null;
+      
+      const keys = ['amount', 'totalAmount', 'transAmount', 'paidAmount'];
+      for (const k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') {
+          const val = parseFloat(obj[k]);
+          if (!isNaN(val) && val > 0) return val;
+        }
+      }
+      for (const key of Object.keys(obj)) {
+        if (typeof obj[key] === 'object') {
+          const res = findAmountDeep(obj[key]);
+          if (res !== null) return res;
+        }
+      }
+      return null;
+    }
+
     // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (อ่านยอดจริง ป้องกันซ้ำ ล็อคบัญชีร้าน)
     async function handleSlipUpload(event) {
       if (!currentUser) {
@@ -1287,18 +1332,21 @@
               return;
             }
 
-            const slipData = res.data || res;
+            // 2. ดึงยอดเงินจริง โดยเจาะหาจาก JSON ทุกระดับชั้น
+            let amount = findAmountDeep(res);
 
-            // 2. ดึงยอดเงินจริงที่ธนาคารตอบกลับมา
-            let rawAmount = slipData.amount || slipData.totalAmount || (slipData.data && slipData.data.amount);
-            const amount = parseFloat(rawAmount);
+            // หาก Slip2Go ตอบผ่านแต่ซ่อนยอดเงินไว้ ให้ดึงจากข้อมูล QR ตรงๆ
+            if (!amount || isNaN(amount) || amount <= 0) {
+              amount = parseSlipAmountFromQR(qrPayload);
+            }
 
             if (!amount || isNaN(amount) || amount <= 0) {
-              alert('สลิปถูกต้อง แต่ไม่พบยอดเงินในระบบ กรุณาติดต่อแอดมินนะคะ ♡');
+              alert('สลิปถูกต้อง แต่ไม่สามารถอ่านยอดเงินได้ กรุณาติดต่อแอดมินนะคะ ♡');
               return;
             }
 
             // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference จริง
+            const slipData = res.data || res;
             const transRef = slipData.transRef || slipData.trans_ref || slipData.ref || slipData.transactionId || generateSlipHash(qrPayload);
             const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
             if (slipDoc.exists) {
