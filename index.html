@@ -770,8 +770,8 @@
     const DB_USERS = "nonghoshi_users";
     const DB_SLIPS = "nonghoshi_slips";
 
-    // ค่าเชื่อมต่อ Slip2Go API
-    const SLIP2GO_API_KEY = "KbKFROmD2J2f8egPw4PipcKxBSdbYqqViv_VUCjM0H4=";
+    // ค่าเชื่อมต่อ Slip2Go API (อัปเดตคีย์ล่าสุดตามที่คุณส่งมา)
+    const SLIP2GO_API_KEY = "Hz8S2txK1M21vZ93S_olrfGit8uORKU8_OgAZrQlmOQ=";
 
     let currentUser = null;
     let userData = { balance: 0, role: "user" };
@@ -1245,7 +1245,7 @@
       return null;
     }
 
-    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (Header ตามคู่มือ Slip2Go 100%)
+    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (Header เป็น Authorization = SecretKey ตามคู่มือ)
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
