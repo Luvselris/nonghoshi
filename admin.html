@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Dashboard ♡ nonghoshi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --c-border: #fbcfe8;
+      --c-main: #f472b6;
+      --c-deep: #db2777;
+      --agent-gold: #f59e0b;
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --text: #3b354d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Quicksand', 'Mitr', sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #ffffff 0%, #fdf2f8 55%, #ede9fe 100%);
+      color: var(--text); min-height: 100vh; padding: 20px 14px 60px; display: flex; justify-content: center;
+    }
+    .container { width: 100%; max-width: 480px; }
+    .card {
+      background: var(--card-bg); border-radius: 24px; padding: 20px;
+      box-shadow: 0 10px 25px rgba(244, 114, 182, 0.25); border: 1.5px solid #fff; margin-bottom: 16px;
+    }
+    .title { font-size: 18px; font-weight: 700; color: var(--c-main); text-align: center; margin-bottom: 14px; }
+    .field-group { margin-bottom: 12px; }
+    .field-label { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: block; }
+    .input-box, .textarea-box {
+      width: 100%; padding: 11px 14px; border-radius: 14px; border: 1.5px solid var(--c-border);
+      outline: none; font-size: 13.5px; background: #fff;
+    }
+    .input-box:focus, .textarea-box:focus { border-color: var(--c-main); }
+    .textarea-box { min-height: 80px; resize: vertical; }
+
+    .nav-tabs {
+      display: flex; gap: 4px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex-shrink: 0; padding: 9px 12px; border: none; border-radius: 16px;
+      background: #ffffff; color: var(--text); font-weight: 600; cursor: pointer;
+      border: 1px solid var(--c-border); font-size: 12.5px;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--c-border), var(--c-main));
+      color: #fff; border-color: transparent;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .app-admin-card {
+      background: #fff; border: 1.5px solid var(--c-border); border-radius: 18px;
+      padding: 14px; margin-bottom: 12px;
+    }
+    .plan-stock-card {
+      background: #fdf2f8; border: 1px dashed var(--c-main); border-radius: 12px;
+      padding: 10px; margin-top: 8px;
+    }
+
+    .btn {
+      width: 100%; padding: 12px; border-radius: 18px; border: none; font-size: 14.5px;
+      font-weight: 700; cursor: pointer; background: linear-gradient(135deg, var(--c-border), var(--c-main));
+      color: #fff; box-shadow: 0 4px 14px rgba(244, 114, 182, 0.35); margin-top: 8px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-secondary {
+      background: #fff; color: var(--c-main); border: 1.5px solid var(--c-border); box-shadow: none;
+    }
+
+    .agent-item-card {
+      background: #ffffff; border: 1px solid var(--c-border); border-radius: 14px;
+      padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ล็อกอินแอดมิน (แสดงเป็น email และ password ตามข้อ 12) -->
+  <div class="card" id="loginBox">
+    <div class="title">Admin Dashboard ♡ nonghoshi</div>
+    <div class="field-group">
+      <label class="field-label">email</label>
+      <input type="text" id="loginInputUser" class="input-box" placeholder="email">
+    </div>
+    <div class="field-group">
+      <label class="field-label">password</label>
+      <input type="password" id="loginInputPass" class="input-box" placeholder="password">
+    </div>
+    <button type="button" class="btn" onclick="handleLogin()">เข้าสู่ระบบแอดมิน ♡</button>
+  </div>
+
+  <!-- แผงแดชบอร์ด -->
+  <div id="dashboardBox" class="hidden">
+    <div class="nav-tabs">
+      <button type="button" class="tab-btn active" onclick="switchAdminTab('general')">1. ร้านค้า ♡</button>
+      <button type="button" class="tab-btn" onclick="switchAdminTab('apps')">2. แอพ & สต็อก ♡</button>
+      <button type="button" class="tab-btn" onclick="switchAdminTab('wallet')">3. เติมเงินแอดมิน ♡</button>
+      <button type="button" class="tab-btn" onclick="switchAdminTab('agents')">4. ยศตัวแทน ♡</button>
+      <button type="button" class="tab-btn" onclick="switchAdminTab('account')">5. บัญชีแอดมิน ♡</button>
+    </div>
+
+    <!-- แถบ 1: ข้อมูลหน้าร้าน -->
+    <div class="tab-content active" id="tab-general">
+      <div class="card">
+        <div class="title">ข้อมูลโปรไฟล์ร้าน ♡</div>
+        <div class="field-group">
+          <label class="field-label">ชื่อร้าน</label>
+          <input type="text" id="cfgShopName" class="input-box">
+        </div>
+        <div class="field-group">
+          <label class="field-label">คำอธิบายร้าน (Bio)</label>
+          <textarea id="cfgShopBio" class="textarea-box"></textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">URL รูปแบนเนอร์ (PNG/JPG/GIF)</label>
+          <input type="text" id="cfgBanner" class="input-box">
+        </div>
+        <div class="field-group">
+          <label class="field-label">URL รูปโปรไฟล์</label>
+          <input type="text" id="cfgProfile" class="input-box">
+        </div>
+        <div class="field-group">
+          <label class="field-label">URL LINE Officials</label>
+          <input type="text" id="cfgLineOa" class="input-box">
+        </div>
+        <div class="field-group">
+          <label class="field-label">URL เพลง (.mp3)</label>
+          <input type="text" id="cfgMusic" class="input-box">
+        </div>
+        <button type="button" class="btn" onclick="saveGeneralConfig()">บันทึกข้อมูลหน้าร้าน ♡</button>
+      </div>
+    </div>
+
+    <!-- แถบ 2: แอพ & 2 ราคา + แบบฟอร์มสต็อกยาวๆ -->
+    <div class="tab-content" id="tab-apps">
+      <div class="card">
+        <div class="title">จัดการแอพ, แบบฟอร์มสต็อก & ราคาส่ง ♡</div>
+        <div id="appsListContainer"></div>
+        <button type="button" class="btn btn-secondary" onclick="addNewAppBox()">+ เพิ่มกล่องแอพพรีเมี่ยมใหม่ ♡</button>
+        <button type="button" class="btn" onclick="saveAllApps()">บันทึกรายการแอพ & สต็อกทั้งหมด ♡</button>
+      </div>
+    </div>
+
+    <!-- แถบ 3: เติมเงินแอดมิน / ลูกค้า -->
+    <div class="tab-content" id="tab-wallet">
+      <div class="card">
+        <div class="title">เติมเครดิตแอดมิน & ลูกค้า ♡</div>
+        
+        <div style="background:#fdf2f8; border:1.5px dashed var(--c-main); border-radius:16px; padding:14px; margin-bottom:16px;">
+          <div style="font-weight:700; color:var(--c-main); font-size:14px;">เติมเครดิตด่วนเข้าบัญชีแอดมิน (nongshi) ♡</div>
+          <div style="font-size:12px; color:var(--text); margin:4px 0 10px;">ยอดเงินจะเข้าบัญชีแอดมินทันที สำหรับใช้กดซื้อสินค้าทดสอบ</div>
+          <div style="display:flex; gap:8px;">
+            <input type="number" id="quickAdminAmount" class="input-box" placeholder="ระบุยอดเงิน เช่น 9999" value="9999">
+            <button type="button" class="btn" style="width:auto; white-space:nowrap; margin-top:0;" onclick="quickTopupAdmin()">เติมเข้าแอดมิน ♡</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">ชื่อผู้ใช้ (Username) ที่ต้องการเติมเงิน</label>
+          <input type="text" id="targetUsername" class="input-box" placeholder="กรอก username">
+        </div>
+        <div class="field-group">
+          <label class="field-label">จำนวนเงินที่ต้องการเติม (บาท)</label>
+          <input type="number" id="addBalanceAmount" class="input-box" placeholder="เช่น 500 หรือ 1000">
+        </div>
+        <button type="button" class="btn" onclick="adminAddBalance()">เติมเงินเข้าระบบ ♡</button>
+      </div>
+    </div>
+
+    <!-- แถบ 4: ยศตัวแทน -->
+    <div class="tab-content" id="tab-agents">
+      <div class="card">
+        <div class="title">จัดการยศตัวแทนจำหน่าย ♡</div>
+        <div class="field-group">
+          <label class="field-label">พิมพ์ชื่อผู้ใช้ (Username) ที่ต้องการปรับยศเป็นตัวแทน</label>
+          <input type="text" id="targetAgentUsername" class="input-box" placeholder="กรอก username ลูกค้า">
+        </div>
+        <button type="button" class="btn" onclick="grantAgentRole()">+ แต่งตั้งเป็นตัวแทน (ได้ราคาส่งทันที) ♡</button>
+
+        <h4 style="font-size:14px; font-weight:700; color:var(--c-main); margin:18px 0 8px;">รายชื่อตัวแทนในระบบปัจจุบัน:</h4>
+        <div id="agentsListContainer"></div>
+      </div>
+    </div>
+
+    <!-- แถบ 5: รหัสแอดมิน -->
+    <div class="tab-content" id="tab-account">
+      <div class="card">
+        <div class="title">บัญชีแอดมิน ♡</div>
+        <div class="field-group">
+          <label class="field-label">ชื่อผู้ใช้แอดมิน</label>
+          <input type="text" id="newAdminUser" class="input-box" placeholder="nongshi">
+        </div>
+        <div class="field-group">
+          <label class="field-label">อีเมลแอดมิน</label>
+          <input type="email" id="newAdminEmail" class="input-box" placeholder="wxrqsrz@gmail.com">
+        </div>
+        <div class="field-group">
+          <label class="field-label">รหัสผ่านใหม่</label>
+          <input type="password" id="newAdminPass" class="input-box" placeholder="ปล่อยว่างหากไม่เปลี่ยน">
+        </div>
+        <button type="button" class="btn" onclick="updateAdminCredentials()">บันทึกข้อมูลแอดมิน ♡</button>
+        <button type="button" class="btn btn-secondary" onclick="logout()">ออกจากระบบ ♡</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // เชื่อมต่อ Firebase โปรเจกต์ butterbear-d2afd
+  const firebaseConfig = {
+    apiKey: "AIzaSyCkcPDpXEX4Hopb8d7qJu1UypTKXEC0rqw",
+    authDomain: "butterbear-d2afd.firebaseapp.com",
+    projectId: "butterbear-d2afd",
+    storageBucket: "butterbear-d2afd.firebasestorage.app",
+    messagingSenderId: "721696079994",
+    appId: "1:721696079994:web:e1cf38eb821aae3561bbc3",
+    measurementId: "G-GBTV8DVBR3"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const DB_SITE = "nonghoshi_site";
+  const DB_APPS = "nonghoshi_apps";
+  const DB_USERS = "nonghoshi_users";
+
+  // ข้อมูลแอดมินตามข้อ 12
+  let adminUser = "nongshi";
+  let adminEmail = "wxrqsrz@gmail.com";
+  let adminPass = "wxrqsrz1234";
+  let appsEditData = [];
+
+  const FORM_SEPARATOR = "\n===\n";
+
+  async function ensureAdminUserExists() {
+    const adminRef = db.collection(DB_USERS).doc(adminUser);
+    const snap = await adminRef.get();
+    if (!snap.exists) {
+      await adminRef.set({
+        username: adminUser,
+        email: adminEmail,
+        password: adminPass,
+        balance: 0,
+        role: "admin",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await adminRef.update({ role: "admin", email: adminEmail, password: adminPass });
+    }
+  }
+
+  db.collection(DB_SITE).doc("admin").onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (d.username) adminUser = d.username;
+      if (d.email) adminEmail = d.email;
+      if (d.pass) adminPass = d.pass;
+    }
+  });
+
+  async function handleLogin() {
+    const inputVal = document.getElementById('loginInputUser').value.trim();
+    const p = document.getElementById('loginInputPass').value.trim();
+
+    // อนุญาตให้ล็อกอินได้ทั้งด้วย email หรือ username
+    const isUserMatch = (inputVal === adminUser || inputVal === adminEmail);
+
+    if (isUserMatch && p === adminPass) {
+      await ensureAdminUserExists();
+      document.getElementById('loginBox').classList.add('hidden');
+      document.getElementById('dashboardBox').classList.remove('hidden');
+      loadAllAdminData();
+      listenAgentsList();
+    } else {
+      alert('email หรือ password ไม่ถูกต้องค่ะ ♡');
+    }
+  }
+
+  function switchAdminTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(`tab-${name}`).classList.add('active');
+  }
+
+  function loadAllAdminData() {
+    db.collection(DB_SITE).doc("config").get().then(doc => {
+      const d = doc.exists ? doc.data() : {};
+      document.getElementById('cfgShopName').value = d.shopName || "nonghoshi ♡";
+      document.getElementById('cfgShopBio').value = d.shopBio || `กดเว็บได้ตลอด 24 ชั่วโมง สมัครแล้วทักแจ้งยูสและช่องทางการขายนะคับ แอพมีปัญหาทักในไลน์only`;
+      document.getElementById('cfgBanner').value = d.bannerImg || "https://files.catbox.moe/ijxfin.png";
+      document.getElementById('cfgProfile').value = d.profileImg || "https://files.catbox.moe/98xnxn.jpeg";
+      document.getElementById('cfgLineOa').value = d.lineOaUrl || "https://line.me/ti/p/BxmZSASbBs";
+      document.getElementById('cfgMusic').value = d.musicUrl || "https://file.garden/asG8Gt-rqWIpi3II/%E0%B8%82%E0%B8%B5%E0%B9%89%E0%B9%81%E0%B8%87%20-%20SAUCE%20BKK%20(%E0%B9%80%E0%B8%99%E0%B8%B7%E0%B9%89%E0%B8%AD%E0%B9%80%E0%B8%9E%E0%B8%A5%E0%B8%87).mp3";
+    });
+
+    document.getElementById('newAdminUser').value = adminUser;
+    document.getElementById('newAdminEmail').value = adminEmail;
+
+    db.collection(DB_APPS).orderBy("order", "asc").get().then(snap => {
+      if (!snap.empty) {
+        appsEditData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } else {
+        appsEditData = [
+          {
+            name: "netflix",
+            thumb: "https://files.catbox.moe/kszmeo.jpeg",
+            desc: "โดนปิดไม่รับเคลมถ้าไม่ซื้อแบบเคลม ♡",
+            order: 0,
+            plans: [
+              { name: "1 day", price: 10, agentPrice: 8, stock: [] },
+              { name: "1 day เคลม", price: 15, agentPrice: 12, stock: [] },
+              { name: "7 day", price: 35, agentPrice: 30, stock: [] },
+              { name: "7 day เคลม", price: 40, agentPrice: 35, stock: [] },
+              { name: "30 day", price: 105, agentPrice: 90, stock: [] },
+              { name: "30 day เคลม", price: 110, agentPrice: 95, stock: [] }
+            ]
+          },
+          {
+            name: "youtube",
+            thumb: "https://files.catbox.moe/o8wqpz.jpeg",
+            desc: "",
+            order: 1,
+            plans: [
+              { name: "30 d ไม่ต่อเมล", price: 20, agentPrice: 15, stock: [] },
+              { name: "30 d เคลม", price: 25, agentPrice: 20, stock: [] }
+            ]
+          },
+          {
+            name: "spotify",
+            thumb: "https://files.catbox.moe/c7sg6u.jpeg",
+            desc: "",
+            order: 2,
+            plans: [
+              { name: "30 d ( เมลลูกค้า )", price: 55, agentPrice: 45, stock: [] },
+              { name: "30 d ( เมลร้าน )", price: 65, agentPrice: 55, stock: [] }
+            ]
+          }
+        ];
+      }
+      renderAppsEditor();
+    });
+  }
+
+  function renderAppsEditor() {
+    const box = document.getElementById('appsListContainer');
+    box.innerHTML = '';
+
+    appsEditData.forEach((app, aIdx) => {
+      const card = document.createElement('div');
+      card.className = 'app-admin-card';
+
+      let plansHtml = '';
+      (app.plans || []).forEach((p, pIdx) => {
+        const stockStr = (p.stock || []).join(FORM_SEPARATOR);
+        plansHtml += `
+          <div class="plan-stock-card">
+            <div style="display:flex; gap:6px; margin-bottom:4px; align-items:center;">
+              <input type="text" class="input-box" value="${p.name}" style="flex:2;" placeholder="ชื่อแพ็กเกจ" oninput="appsEditData[${aIdx}].plans[${pIdx}].name=this.value">
+              <input type="number" class="input-box" value="${p.price}" style="flex:1;" placeholder="ราคาปกติ (฿)" oninput="appsEditData[${aIdx}].plans[${pIdx}].price=parseFloat(this.value)||0">
+              <input type="number" class="input-box" value="${p.agentPrice || ''}" style="flex:1; border-color:var(--agent-gold); background:#fffbeb;" placeholder="ราคาส่ง (฿)" oninput="appsEditData[${aIdx}].plans[${pIdx}].agentPrice=parseFloat(this.value)||0">
+              <button type="button" style="background:#fee2e2; border:none; color:#ef4444; border-radius:10px; padding:0 8px; height:36px;" onclick="removePlan(${aIdx}, ${pIdx})">✕</button>
+            </div>
+            <label style="font-size:11.5px; color:#475569; font-weight:700;">
+              วางแบบฟอร์มส่งรหัสยาวๆ ได้เลย (หากมีหลายชุดให้คั่นด้วย ===) ♡:
+            </label>
+            <textarea class="textarea-box" style="font-size:12px; font-family:monospace; min-height:120px; white-space:pre;" placeholder="วางแบบฟอร์มส่งรหัสที่นี่ได้ยาวๆ เลยค่ะ..." oninput="updateStock(${aIdx}, ${pIdx}, this.value)">${stockStr}</textarea>
+            <div style="font-size:11px; color:#64748b; margin-top:2px;">
+              คงเหลือในสต็อก: <strong style="color:var(--c-main);">${(p.stock || []).length}</strong> ชุด ♡
+            </div>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="color:var(--c-main);">กล่องแอพที่ ${aIdx+1} ♡</strong>
+          <button type="button" style="background:#fee2e2; border:none; color:#ef4444; border-radius:10px; padding:4px 8px; font-size:12px;" onclick="deleteApp(${aIdx})">ลบแอพนี้ ♡</button>
+        </div>
+        <div class="field-group">
+          <label class="field-label">ชื่อแอพ</label>
+          <input type="text" class="input-box" value="${app.name}" oninput="appsEditData[${aIdx}].name=this.value">
+        </div>
+        <div class="field-group">
+          <label class="field-label">URL รูปปกแอพ</label>
+          <input type="text" class="input-box" value="${app.thumb}" oninput="appsEditData[${aIdx}].thumb=this.value">
+        </div>
+        <div class="field-group">
+          <label class="field-label">คำอธิบายเมื่อกดเข้าไป</label>
+          <input type="text" class="input-box" value="${app.desc || ''}" oninput="appsEditData[${aIdx}].desc=this.value">
+        </div>
+        
+        <label class="field-label" style="margin-top:10px;">แพ็กเกจ & แบบฟอร์มสต็อก (ช่องขวาคือ ราคาส่ง) ♡:</label>
+        ${plansHtml}
+        <button type="button" class="btn btn-secondary" style="padding:8px; font-size:12px; margin-top:8px;" onclick="addPlanToApp(${aIdx})">+ เพิ่มแพ็กเกจย่อย ♡</button>
+      `;
+      box.appendChild(card);
+    });
+  }
+
+  function updateStock(aIdx, pIdx, text) {
+    if (!text || !text.trim()) {
+      appsEditData[aIdx].plans[pIdx].stock = [];
+      return;
+    }
+    const forms = text.split(/\n?===\n?/).map(s => s.trim()).filter(s => s.length > 0);
+    appsEditData[aIdx].plans[pIdx].stock = forms;
+  }
+
+  function addPlanToApp(aIdx) {
+    appsEditData[aIdx].plans.push({ name: "แพ็กเกจใหม่", price: 10, agentPrice: 8, stock: [] });
+    renderAppsEditor();
+  }
+
+  function removePlan(aIdx, pIdx) {
+    appsEditData[aIdx].plans.splice(pIdx, 1);
+    renderAppsEditor();
+  }
+
+  function addNewAppBox() {
+    appsEditData.push({
+      name: "แอพใหม่",
+      thumb: "https://files.catbox.moe/kszmeo.jpeg",
+      desc: "",
+      order: appsEditData.length,
+      plans: [{ name: "30 day", price: 50, agentPrice: 40, stock: [] }]
+    });
+    renderAppsEditor();
+  }
+
+  function deleteApp(aIdx) {
+    if (confirm("ต้องการลบกล่องแอพนี้ใช่ไหมคะ? ♡")) {
+      appsEditData.splice(aIdx, 1);
+      renderAppsEditor();
+    }
+  }
+
+  // เติมเงินลัดเข้า nongshi
+  async function quickTopupAdmin() {
+    const amt = parseFloat(document.getElementById('quickAdminAmount').value.trim());
+    if (!amt || isNaN(amt) || amt <= 0) return alert('กรุณากรอกยอดเงินให้ถูกต้องค่ะ ♡');
+
+    await ensureAdminUserExists();
+    const uRef = db.collection(DB_USERS).doc(adminUser);
+    const snap = await uRef.get();
+    const curBal = (snap.data() && snap.data().balance) || 0;
+    const newBal = curBal + amt;
+
+    await uRef.update({ balance: newBal });
+    alert(`เติมเครดิตเข้าบัญชีแอดมิน (${adminUser}) สำเร็จแล้วค่ะ!\nจำนวน: +฿${amt.toFixed(2)}\nยอดคงเหลือในเว็บหลัก: ฿${newBal.toFixed(2)} ♡`);
+  }
+
+  async function adminAddBalance() {
+    const uName = document.getElementById('targetUsername').value.trim();
+    const amount = parseFloat(document.getElementById('addBalanceAmount').value.trim());
+
+    if (!uName) return alert('กรุณากรอกชื่อผู้ใช้ที่ต้องการเติมเงินค่ะ ♡');
+    if (!amount || isNaN(amount) || amount <= 0) return alert('กรุณากรอกจำนวนเงินให้ถูกต้องค่ะ ♡');
+
+    const uRef = db.collection(DB_USERS).doc(uName);
+    const snap = await uRef.get();
+
+    if (!snap.exists) {
+      return alert(`ไม่พบผู้ใช้ "${uName}" ในระบบ กรุณาตรวจสอบชื่อผู้ใช้ใหม่อีกครั้งค่ะ ♡`);
+    }
+
+    const curBal = snap.data().balance || 0;
+    const newBal = curBal + amount;
+
+    await uRef.update({ balance: newBal });
+    alert(`เติมเงินให้คุณ "${uName}" เรียบร้อยแล้วค่ะ!\nจำนวน: +฿${amount.toFixed(2)}\nยอดคงเหลือใหม่: ฿${newBal.toFixed(2)} ♡`);
+    document.getElementById('addBalanceAmount').value = '';
+  }
+
+  async function grantAgentRole() {
+    const targetUser = document.getElementById('targetAgentUsername').value.trim();
+    if (!targetUser) return alert('กรุณากรอกชื่อผู้ใช้ที่ต้องการปรับยศค่ะ ♡');
+
+    const uRef = db.collection(DB_USERS).doc(targetUser);
+    const snap = await uRef.get();
+
+    if (!snap.exists) {
+      return alert(`ไม่พบชื่อผู้ใช้ "${targetUser}" ในระบบค่ะ ♡`);
+    }
+
+    await uRef.update({ role: 'agent' });
+    alert(`ปรับยศคุณ "${targetUser}" เป็นตัวแทนจำหน่ายเรียบร้อยแล้วค่ะ! ♡`);
+    document.getElementById('targetAgentUsername').value = '';
+  }
+
+  function listenAgentsList() {
+    db.collection(DB_USERS).where("role", "==", "agent").onSnapshot(snap => {
+      const box = document.getElementById('agentsListContainer');
+      box.innerHTML = '';
+      if (snap.empty) {
+        box.innerHTML = '<p style="font-size:12px; color:var(--text-muted);">ยังไม่มีตัวแทนในระบบ ♡</p>';
+        return;
+      }
+      snap.forEach(doc => {
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.className = 'agent-item-card';
+        div.innerHTML = `
+          <div>
+            <strong style="color:var(--agent-gold); font-size:13.5px;">${d.username} ♡</strong>
+            <div style="font-size:11px; color:var(--text-muted);">${d.email} | ยอดเงิน: ฿${(d.balance||0).toFixed(2)}</div>
+          </div>
+          <button type="button" style="background:#fee2e2; border:none; color:#ef4444; border-radius:10px; padding:4px 8px; font-size:11.5px; cursor:pointer;" onclick="revokeAgentRole('${doc.id}')">ปลดยศ ♡</button>
+        `;
+        box.appendChild(div);
+      });
+    });
+  }
+
+  async function revokeAgentRole(username) {
+    if (confirm(`ต้องการปลดยศตัวแทนของคุณ "${username}" กลับเป็นลูกค้าธรรมดาใช่ไหมคะ? ♡`)) {
+      await db.collection(DB_USERS).doc(username).update({ role: 'user' });
+      alert(`ปลดยศ "${username}" เรียบร้อยแล้วค่ะ ♡`);
+    }
+  }
+
+  async function saveGeneralConfig() {
+    const payload = {
+      shopName: document.getElementById('cfgShopName').value.trim(),
+      shopBio: document.getElementById('cfgShopBio').value.trim(),
+      bannerImg: document.getElementById('cfgBanner').value.trim(),
+      profileImg: document.getElementById('cfgProfile').value.trim(),
+      lineOaUrl: document.getElementById('cfgLineOa').value.trim(),
+      musicUrl: document.getElementById('cfgMusic').value.trim(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection(DB_SITE).doc("config").set(payload, { merge: true });
+    alert("บันทึกข้อมูลหน้าร้านเรียบร้อยแล้วค่ะ ♡");
+  }
+
+  async function saveAllApps() {
+    const batch = db.batch();
+    const snap = await db.collection(DB_APPS).get();
+    snap.docs.forEach(d => batch.delete(d.ref));
+
+    appsEditData.forEach((app, idx) => {
+      const ref = db.collection(DB_APPS).doc(`app_${idx}`);
+      batch.set(ref, {
+        name: app.name,
+        thumb: app.thumb,
+        desc: app.desc || "",
+        order: idx,
+        plans: app.plans || []
+      });
+    });
+
+    await batch.commit();
+    alert("บันทึกรายการแอพ, สต็อก และราคาส่งทั้งหมดขึ้นระบบเรียบร้อยแล้วค่ะ ♡");
+  }
+
+  async function updateAdminCredentials() {
+    const nu = document.getElementById('newAdminUser').value.trim();
+    const ne = document.getElementById('newAdminEmail').value.trim();
+    const np = document.getElementById('newAdminPass').value.trim();
+    const payload = {};
+    if (nu) { payload.username = nu; adminUser = nu; }
+    if (ne) { payload.email = ne; adminEmail = ne; }
+    if (np) { payload.pass = np; adminPass = np; }
+
+    await db.collection(DB_SITE).doc("admin").set(payload, { merge: true });
+    await ensureAdminUserExists();
+    document.getElementById('newAdminPass').value = '';
+    alert("อัปเดตข้อมูลเข้าสู่ระบบแอดมินเรียบร้อยแล้วค่ะ ♡");
+  }
+
+  function logout() {
+    document.getElementById('dashboardBox').classList.add('hidden');
+    document.getElementById('loginBox').classList.remove('hidden');
+    document.getElementById('loginInputPass').value = '';
+  }
+</script>
+</body>
+</html>
