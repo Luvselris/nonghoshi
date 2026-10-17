@@ -1223,29 +1223,6 @@
       return 'slip_' + Math.abs(hash);
     }
 
-    // ฟังก์ชันช่วยดึงยอดเงินจาก QR หาก API ธนาคารตอบฟิลด์ไม่ตรง
-    function parseSlipAmountFromQR(qrData) {
-      if (!qrData || typeof qrData !== 'string') return null;
-      let index = 0;
-      while (index < qrData.length - 4) {
-        const tag = qrData.substr(index, 2);
-        const length = parseInt(qrData.substr(index + 2, 2), 10);
-        if (isNaN(length)) break;
-        const value = qrData.substr(index + 4, length);
-        if (tag === '54') {
-          const parsed = parseFloat(value);
-          if (!isNaN(parsed) && parsed > 0) return parsed;
-        }
-        index += 4 + length;
-      }
-      const match = qrData.match(/54\d{2}([0-9]+(?:\.[0-9]{1,2})?)/);
-      if (match && match[1]) {
-        const parsed = parseFloat(match[1]);
-        if (!isNaN(parsed) && parsed > 0) return parsed;
-      }
-      return null;
-    }
-
     // ฟังก์ชันช่วยเจาะหายอดเงินจาก JSON ทุกระดับชั้น
     function findAmountDeep(obj) {
       if (!obj) return null;
@@ -1268,7 +1245,7 @@
       return null;
     }
 
-    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (อ่านยอดจริง ป้องกันซ้ำ ล็อคบัญชีร้าน)
+    // ตรวจสอบสลิปผ่าน Slip2Go API อัตโนมัติ (Header ตามคู่มือ Slip2Go 100%)
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1307,41 +1284,31 @@
 
             const qrPayload = code.data;
 
-            // 1. ส่งข้อมูลไปยัง Slip2Go ให้เซิร์ฟเวอร์ตรวจเช็กบัญชีที่ลงทะเบียนไว้
+            // 1. ส่งข้อมูลไปยัง Slip2Go (Header เป็น Authorization = SecretKey ตามคู่มือ)
             const response = await fetch('https://connect.slip2go.com/api/verify-slip/qr-code/info', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'secret': SLIP2GO_API_KEY,
-                'x-api-key': SLIP2GO_API_KEY,
-                'Authorization': `Bearer ${SLIP2GO_API_KEY}`
+                'Authorization': SLIP2GO_API_KEY
               },
               body: JSON.stringify({ 
-                payload: qrPayload,
-                qrcode: qrPayload,
-                data: qrPayload 
+                payload: qrPayload
               })
             });
 
             const res = await response.json();
 
-            // เช็คผลลัพธ์จาก Slip2Go (ถ้าสลิปไม่ถูกต้อง หรือโอนผิดบัญชี Slip2Go จะปฏิเสธ)
-            if (!res || (res.status && res.status !== 200 && res.status !== 201) || res.success === false) {
+            // เช็คผลลัพธ์จาก Slip2Go
+            if (!res || (res.status && res.status !== 200 && res.status !== 201) || res.code || res.success === false) {
               const errMsg = res.message || res.error || (res.data && res.data.message) || 'สลิปไม่ถูกต้อง หรือยอดเงินไม่ได้โอนเข้าบัญชีร้านค่ะ ♡';
               alert(errMsg);
               return;
             }
 
-            // 2. ดึงยอดเงินจริง โดยเจาะหาจาก JSON ทุกระดับชั้น
+            // 2. ดึงยอดเงินจริงที่ Slip2Go ส่งมา
             let amount = findAmountDeep(res);
-
-            // หาก Slip2Go ตอบผ่านแต่ซ่อนยอดเงินไว้ ให้ดึงจากข้อมูล QR ตรงๆ
             if (!amount || isNaN(amount) || amount <= 0) {
-              amount = parseSlipAmountFromQR(qrPayload);
-            }
-
-            if (!amount || isNaN(amount) || amount <= 0) {
-              alert("DEBUG ข้อมูลที่ Slip2Go ส่งมา:\n" + JSON.stringify(res, null, 2));
+              alert('สลิปถูกต้อง แต่ไม่สามารถอ่านยอดเงินได้ กรุณาติดต่อแอดมินนะคะ ♡');
               return;
             }
 
