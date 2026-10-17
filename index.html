@@ -660,7 +660,7 @@
           <span style="color:var(--c-main) !important; -webkit-text-fill-color:var(--c-main) !important; font-size:12px;">คัดลอก ♡</span>
         </div>
 
-        <!-- แนบสลิปโอนเงิน (สแกนตรวจสลิปอัตโนมัติ) -->
+        <!-- แนบสลิปโอนเงิน (ตรวจยอดเงินอัตโนมัติผ่าน EasySlip) -->
         <div class="slip-uploader-box" id="slipBox" onclick="document.getElementById('slipFileInput').click()">
           <div style="font-size:24px; color:var(--c-main);">♡</div>
           <div id="slipBoxTitle" style="font-weight:700; color:var(--c-main); margin-top:4px;">แนบสลิปโอนเงิน (ตรวจยอดเงินอัตโนมัติ) ♡</div>
@@ -769,6 +769,9 @@
     const DB_ORDERS = "nonghoshi_orders";
     const DB_USERS = "nonghoshi_users";
     const DB_SLIPS = "nonghoshi_slips";
+
+    // ใส่ API Key จาก EasySlip ที่คุณส่งมาเรียบร้อยแล้ว
+    const EASYSLIP_API_KEY = "7e7cd86a-4f08-448a-83b5-a9c90c81144d";
 
     let currentUser = null;
     let userData = { balance: 0, role: "user" };
@@ -1210,35 +1213,7 @@
       });
     }
 
-    // ฟังก์ชันถอดรหัสยอดเงินจากโครงสร้างมาตรฐาน QR PromptPay / สลิปโอนเงิน
-    function extractAmountFromQR(qrData) {
-      if (!qrData || typeof qrData !== 'string') return null;
-      try {
-        let index = 0;
-        while (index < qrData.length - 4) {
-          const tag = qrData.substr(index, 2);
-          const len = parseInt(qrData.substr(index + 2, 2), 10);
-          if (isNaN(len)) break;
-          const val = qrData.substr(index + 4, len);
-          if (tag === '54') {
-            const parsed = parseFloat(val);
-            if (!isNaN(parsed) && parsed > 0) return parsed;
-          }
-          index += 4 + len;
-        }
-      } catch (e) {}
-
-      // สำรองด้วย Regex มาตรฐาน Tag 54
-      const match = qrData.match(/54\d{2}([0-9]+(?:\.[0-9]{1,2})?)/);
-      if (match && match[1]) {
-        const parsed = parseFloat(match[1]);
-        if (!isNaN(parsed) && parsed > 0) return parsed;
-      }
-      return null;
-    }
-
-    // สร้าง Transaction Reference อัตโนมัติจากชุดรหัสสลิป
-    function getSlipRef(str) {
+    function generateSlipHash(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         hash = ((hash << 5) - hash) + str.charCodeAt(i);
@@ -1247,7 +1222,7 @@
       return 'slip_' + Math.abs(hash);
     }
 
-    // ระบบตรวจสอบสลิปตรง: สแกนอ่านค่าจากสลิปธนาคาร เติมเงินทันที 100%
+    // ตรวจสอบสลิปผ่าน EasySlip API
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1263,8 +1238,8 @@
       const origTitle = titleEl.textContent;
       const origSub = subEl.textContent;
 
-      titleEl.textContent = 'กำลังสแกนและตรวจสอบข้อมูล... ♡';
-      subEl.textContent = 'กรุณารอสักครู่นะคะ ระบบกำลังอ่านยอดเงินอัตโนมัติ';
+      titleEl.textContent = 'กำลังตรวจสอบสลิปกับ EasySlip... ♡';
+      subEl.textContent = 'กรุณารอสักครู่นะคะ ระบบกำลังตรวจสอบสลิปอัตโนมัติ';
 
       const reader = new FileReader();
       reader.onload = async e => {
@@ -1280,35 +1255,51 @@
 
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (!code || !code.data) {
-              alert('ไม่พบ QR Code ในสลิป กรุณาใช้รูปสลิปที่มี QR Code ชัดเจนนะคะ ♡');
+              alert('ไม่พบ QR Code ในสลิป กรุณาใช้สลิปโอนเงินที่มี QR Code ชัดเจนนะคะ ♡');
               return;
             }
 
             const qrPayload = code.data;
 
-            // 1. ถอดรหัสยอดเงินจริงจาก QR Code ของสลิปธนาคาร
-            let amount = extractAmountFromQR(qrPayload);
+            // 1. ส่งข้อมูลตรวจสอบไปยัง EasySlip API
+            const response = await fetch('https://developer.easyslip.com/api/v1/verify', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${EASYSLIP_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                payload: qrPayload 
+              })
+            });
 
-            // หากเป็น QR รูปแบบย่อ ให้ถามยืนยันยอดเงินจากลูกค้าเพื่อความแม่นยำ
-            if (!amount || isNaN(amount) || amount <= 0) {
-              const inputAmt = prompt("ตรวจพบสลิปธนาคารเรียบร้อยค่ะ ♡\nกรุณาระบุยอดเงินที่โอนจริงตามสลิป (เช่น 10 หรือ 50):");
-              amount = parseFloat(inputAmt);
-            }
+            const res = await response.json();
 
-            if (!amount || isNaN(amount) || amount <= 0) {
-              alert('ยอดเงินไม่ถูกต้อง ยกเลิกการทำรายการค่ะ ♡');
+            // เช็คสถานะการตอบกลับจาก EasySlip
+            if (res.status !== 200 || !res.data) {
+              const errMsg = res.message || 'สลิปไม่ถูกต้อง หรือไม่พบข้อมูลในระบบธนาคารค่ะ ♡';
+              alert(errMsg);
               return;
             }
 
-            // 2. ป้องกันสลิปซ้ำผ่านรหัสอ้างอิงสลิป
-            const transRef = getSlipRef(qrPayload);
+            // 2. ดึงยอดเงินจริงและรหัสอ้างอิงธุรกรรม
+            const slipData = res.data;
+            const amount = parseFloat(slipData.amount ? slipData.amount.amount : 0);
+            const transRef = slipData.transRef || generateSlipHash(qrPayload);
+
+            if (!amount || isNaN(amount) || amount <= 0) {
+              alert('ไม่สามารถอ่านยอดเงินจากสลิปได้ กรุณาติดต่อแอดมินนะคะ ♡');
+              return;
+            }
+
+            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Firestore
             const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
             if (slipDoc.exists) {
               alert('สลิปนี้เคยใช้งานเติมเงินไปแล้ว ไม่สามารถใช้ซ้ำได้ค่ะ ♡');
               return;
             }
 
-            // 3. เติมเงินเข้ากระเป๋าผู้ใช้ทันที
+            // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
             await db.runTransaction(async t => {
               const uRef = db.collection(DB_USERS).doc(currentUser.docId);
               const uDoc = await t.get(uRef);
@@ -1319,6 +1310,7 @@
                 username: currentUser.username,
                 amount: amount,
                 transRef: transRef,
+                bank: (slipData.sender && slipData.sender.bank && slipData.sender.bank.name) || 'THMB',
                 usedAt: firebase.firestore.FieldValue.serverTimestamp()
               });
             });
