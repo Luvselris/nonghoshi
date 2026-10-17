@@ -759,9 +759,8 @@
     const DB_USERS = "nonghoshi_users";
     const DB_SLIPS = "nonghoshi_slips";
 
-    // ค่าเชื่อมต่อ Slip2Go API & เลขบัญชีร้านค้าที่ถูกต้อง
+    // ค่าเชื่อมต่อ Slip2Go API
     const SLIP2GO_API_KEY = "KbKFROmD2J2f8egPw4PipcKxBSdbYqqViv_VUCjM0H4=";
-    const SHOP_VALID_ACCOUNTS = ["9219471142", "0640923501", "ศิริลักษณ์", "ณัฐพนธ์"];
 
     let currentUser = null;
     let userData = { balance: 0, role: "user" };
@@ -1204,7 +1203,7 @@
       return 'slip_' + Math.abs(hash);
     }
 
-    // ตรวจสอบสลิปผ่าน Slip2Go API Endpoint ตรงตามระบบ 100%
+    // ตรวจสอบสลิปผ่าน Slip2Go API
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1243,7 +1242,7 @@
 
             const qrPayload = code.data;
 
-            // 1. ส่งข้อมูลไปยัง Slip2Go Endpoint ที่ถูกต้อง
+            // 1. ส่งข้อมูลไปยัง Slip2Go
             const response = await fetch('https://connect.slip2go.com/api/verify-slip/qr-code/info', {
               method: 'POST',
               headers: {
@@ -1261,7 +1260,7 @@
 
             const res = await response.json();
 
-            // เช็คผลการตรวจสอบ
+            // เช็คผลการส่งข้อมูล
             if (!res || (res.status !== 200 && res.success === false && !res.data)) {
               const errMsg = res.message || res.error || 'ไม่พบข้อมูลธุรกรรมจากธนาคาร หรือสลิปไม่ถูกต้องค่ะ ♡';
               alert(errMsg);
@@ -1270,16 +1269,21 @@
 
             const slipData = res.data || res;
 
-            // 2. ตรวจสอบเลขบัญชี / ชื่อผู้รับเงิน (ต้องเป็นบัญชีร้านเท่านั้น)
-            const receiverText = JSON.stringify(slipData.receiver || slipData).replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, '');
-            const isShopAccount = SHOP_VALID_ACCOUNTS.some(acc => receiverText.includes(acc));
+            // 2. ดึงข้อความผู้รับทั้งหมดในก้อนข้อมูลมาตรวจจับ
+            const rawReceiverStr = JSON.stringify(slipData.receiver || slipData);
+            const cleanReceiverStr = rawReceiverStr.replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, '');
+
+            // ตรวจสอบทั้งเลขเต็ม เลขลงท้าย 4 ตัว และชื่อเจ้าของบัญชี
+            const validPatterns = ["9219471142", "0640923501", "1142", "3501", "ศิริลักษณ์", "ณัฐพนธ์"];
+            const isShopAccount = validPatterns.some(pat => cleanReceiverStr.includes(pat));
 
             if (!isShopAccount) {
-              alert('สลิปนี้ไม่ได้โอนเข้าบัญชีร้านน้องโฮชิ ไม่สามารถเติมเงินได้ค่ะ ❌');
+              const detectedAcc = (slipData.receiver && (slipData.receiver.account || slipData.receiver.name || slipData.receiver.accountNumber)) || 'ไม่ระบุ';
+              alert(`สลิปนี้ไม่ได้โอนเข้าบัญชีร้านน้องโฮชิค่ะ ❌\n(บัญชีปลายทางที่อ่านได้: ${detectedAcc})`);
               return;
             }
 
-            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference จริงของธนาคาร
+            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Transaction Reference
             const transRef = slipData.transRef || slipData.trans_ref || slipData.ref || generateSlipHash(qrPayload);
             const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
             if (slipDoc.exists) {
@@ -1287,14 +1291,14 @@
               return;
             }
 
-            // 4. ดึงยอดเงินจริงที่ธนาคารตอบกลับมา
+            // 4. ดึงยอดเงินจริงจากธนาคาร
             const amount = parseFloat(slipData.amount || slipData.totalAmount);
             if (!amount || isNaN(amount) || amount <= 0) {
               alert('ไม่พบยอดเงินในสลิป กรุณาติดต่อแอดมินนะคะ ♡');
               return;
             }
 
-            // 5. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติ
+            // 5. บันทึกและปรับยอดเงินเข้าสู่กระเป๋า
             await db.runTransaction(async t => {
               const uRef = db.collection(DB_USERS).doc(currentUser.docId);
               const uDoc = await t.get(uRef);
