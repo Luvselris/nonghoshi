@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- คำสั่งปิดการแปลงตัวเลขเป็นสีน้ำเงินของ iPhone -->
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <title id="pageTitle">nonghoshi ♡</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,6 +42,17 @@
       font-family: 'Quicksand', 'Mitr', sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+    }
+
+    /* บังคับปิดสีน้ำเงินและเส้นใต้บน iOS Safari ทุกกรณี */
+    a[href^="tel"], 
+    .art-text-box a, 
+    .copy-pill-btn a,
+    .art-text-box,
+    .copy-pill-btn span {
+      color: var(--text-pastel-dark) !important;
+      text-decoration: none !important;
+      pointer-events: auto;
     }
 
     body {
@@ -390,7 +403,6 @@
       background: var(--c-soft);
     }
 
-    /* กล่องข้อความและเลขบัญชี: ใช้สีดำพาสเทล */
     .art-text-box {
       background: #ffffff;
       border: 1.5px dashed var(--c-border);
@@ -401,7 +413,7 @@
       line-height: 1.6;
       white-space: pre;
       text-align: center;
-      color: var(--text-pastel-dark);
+      color: var(--text-pastel-dark) !important;
       margin-bottom: 12px;
       overflow-x: auto;
     }
@@ -417,7 +429,7 @@
       cursor: pointer;
       font-size: 13.5px;
       font-weight: 600;
-      color: var(--text-pastel-dark);
+      color: var(--text-pastel-dark) !important;
     }
     .copy-pill-btn:active { background: var(--c-soft); }
 
@@ -455,7 +467,7 @@
       padding: 14px;
       font-size: 12.5px;
       line-height: 1.65;
-      color: var(--text-pastel-dark);
+      color: var(--text-pastel-dark) !important;
       white-space: pre-wrap;
       word-break: break-word;
       user-select: text;
@@ -601,24 +613,24 @@
           payment ♡
         </h2>
 
-        <!-- ฟอร์มเลขบัญชี (สีดำพาสเทล) -->
+        <!-- ฟอร์มเลขบัญชี (สีดำพาสเทล ไร้เส้นใต้) -->
         <div class="art-text-box">.𓈒∶ ศิริลักษณ์  ཾ คงเพชรศักดิ์
-       ttb𓈒     9219471142
+       ttb𓈒     <span>9219471142</span>
 ༷
-     wallet   0640923501
+     wallet   <span>0640923501</span>
      𓈒∶ ณัฐพนธ์  ༷คงเพชรศักดิ์</div>
 
-        <!-- กล่องคัดลอกบัญชีและวอลเล็ต (สีดำพาสเทล) -->
+        <!-- กล่องคัดลอกบัญชีและวอลเล็ต (สีดำพาสเทล ไร้เส้นใต้) -->
         <div class="copy-pill-btn" onclick="copyText('9219471142', 'คัดลอกเลขบัญชี ttb แล้ว ♡')">
-          <span style="color:var(--text-pastel-dark); font-weight:600;">ttb : 9219471142</span>
+          <span style="color:var(--text-pastel-dark) !important; font-weight:600;">ttb : 9219471142</span>
           <span style="color:var(--c-main); font-size:12px;">คัดลอก ♡</span>
         </div>
         <div class="copy-pill-btn" onclick="copyText('0640923501', 'คัดลอกเบอร์ wallet แล้ว ♡')">
-          <span style="color:var(--text-pastel-dark); font-weight:600;">wallet : 0640923501</span>
+          <span style="color:var(--text-pastel-dark) !important; font-weight:600;">wallet : 0640923501</span>
           <span style="color:var(--c-main); font-size:12px;">คัดลอก ♡</span>
         </div>
 
-        <!-- ฟอร์มโน้ตสลิป (สีดำพาสเทล) -->
+        <!-- ฟอร์มโน้ตสลิป -->
         <div class="art-text-box" style="margin-top:12px;">┄ 𓂂♡ เค้ารบกวนตัวแทน𓈒 ִֺֺ🪽𓈒 
       ׅ  𓈒ׅโน๊ตสลิปให้เค้าทีนะคะ𓂂ֺֺ
               ﹝ 𓈒ׅตัวแทนโฮชิ𓈒﹞
@@ -626,9 +638,9 @@
  𓂂ִֺֺหากลืมโน๊ตให้โอนเพิ่มมา 𓈒0.01𓈒ִ  
     𓈒ִ♡ พร้อมโน๊ตสลิปนะคะ 𓈒 👀</div>
 
-        <!-- กล่องคัดลอกคำโน้ตสลิป (สีดำพาสเทล) -->
+        <!-- กล่องคัดลอกคำโน้ตสลิป -->
         <div class="copy-pill-btn" onclick="copyText('ตัวแทนโฮชิ', 'คัดลอกคำโน้ตสลิปแล้ว ♡')">
-          <span style="color:var(--text-pastel-dark); font-weight:600;">ตัวแทนโฮชิ</span>
+          <span style="color:var(--text-pastel-dark) !important; font-weight:600;">ตัวแทนโฮชิ</span>
           <span style="color:var(--c-main); font-size:12px;">คัดลอก ♡</span>
         </div>
 
@@ -1172,7 +1184,6 @@
       });
     }
 
-    // ฟังก์ชันถอดรหัสยอดเงินจาก PromptPay Mini-QR
     function parseSlipAmountFromQR(qrData) {
       if (!qrData || typeof qrData !== 'string') return null;
 
@@ -1207,7 +1218,6 @@
       return null;
     }
 
-    // ระบบตรวจสลิป: อ่านยอดจาก QR เท่านั้น ไม่มี prompt() เด้งถามยอดเงินอีกต่อไป
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1244,7 +1254,6 @@
             return;
           }
 
-          // สกัดยอดเงินจริงจาก QR ตรง ๆ เท่านั้น
           let amount = parseSlipAmountFromQR(qrPayload);
 
           if (!amount || isNaN(amount) || amount <= 0) {
@@ -1280,7 +1289,6 @@
       navigator.clipboard.writeText(str).then(() => alert(msg));
     }
 
-    // รูปลอย mjiy0o.png
     const floatBox = document.getElementById('floatContainer');
     setInterval(() => {
       const el = document.createElement('img');
