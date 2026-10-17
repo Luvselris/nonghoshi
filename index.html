@@ -1326,7 +1326,7 @@
             const res = await response.json();
 
             // เช็คผลลัพธ์จาก Slip2Go (ถ้าสลิปไม่ถูกต้อง หรือโอนผิดบัญชี Slip2Go จะปฏิเสธ)
-            if (!res || (res.status && res.status !== 200 && res.status !== 201) || (res.success === false)) {
+            if (!res || (res.status && res.status !== 200 && res.status !== 201) || res.success === false) {
               const errMsg = res.message || res.error || (res.data && res.data.message) || 'สลิปไม่ถูกต้อง หรือยอดเงินไม่ได้โอนเข้าบัญชีร้านค่ะ ♡';
               alert(errMsg);
               return;
@@ -1341,7 +1341,7 @@
             }
 
             if (!amount || isNaN(amount) || amount <= 0) {
-              alert('สลิปถูกต้อง แต่ไม่สามารถอ่านยอดเงินได้ กรุณาติดต่อแอดมินนะคะ ♡');
+              alert("DEBUG ข้อมูลที่ Slip2Go ส่งมา:\n" + JSON.stringify(res, null, 2));
               return;
             }
 
