@@ -14,8 +14,6 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <!-- ตัวอ่าน QR Code สลิปโอนเงิน -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
   <style>
     :root {
@@ -664,7 +662,7 @@
         <div class="slip-uploader-box" id="slipBox" onclick="document.getElementById('slipFileInput').click()">
           <div style="font-size:24px; color:var(--c-main);">♡</div>
           <div id="slipBoxTitle" style="font-weight:700; color:var(--c-main); margin-top:4px;">แนบสลิปโอนเงิน (ตรวจยอดเงินอัตโนมัติ) ♡</div>
-          <div id="slipBoxSubtitle" style="font-size:12px; color:var(--text-muted); margin-top:2px;">ระบบจะสแกน QR Code อ่านยอดเงินที่โอนจริง และเติมเข้าสู่กระเป๋าของคุณทันที</div>
+          <div id="slipBoxSubtitle" style="font-size:12px; color:var(--text-muted); margin-top:2px;">ระบบจะตรวจสอบสลิป อ่านยอดเงินที่โอนจริง และเติมเข้าสู่กระเป๋าของคุณทันที</div>
           <input type="file" id="slipFileInput" accept="image/*" style="display:none;" onchange="handleSlipUpload(event)">
         </div>
       </div>
@@ -747,8 +745,6 @@
     </div>
   </div>
 
-  <canvas id="qrCanvas" style="display:none;"></canvas>
-
   <script>
     // เชื่อมต่อ Firebase โปรเจกต์ butterbear-d2afd
     const firebaseConfig = {
@@ -770,7 +766,7 @@
     const DB_USERS = "nonghoshi_users";
     const DB_SLIPS = "nonghoshi_slips";
 
-    // ใส่ API Key จาก EasySlip ที่คุณส่งมาเรียบร้อยแล้ว
+    // API Key จาก EasySlip
     const EASYSLIP_API_KEY = "7e7cd86a-4f08-448a-83b5-a9c90c81144d";
 
     let currentUser = null;
@@ -1216,13 +1212,14 @@
     function generateSlipHash(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
         hash |= 0;
       }
       return 'slip_' + Math.abs(hash);
     }
 
-    // ตรวจสอบสลิปผ่าน EasySlip API
+    // ตรวจสอบสลิปผ่าน EasySlip API (ส่งไฟล์รูปภาพจริงด้วย FormData)
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1241,93 +1238,70 @@
       titleEl.textContent = 'กำลังตรวจสอบสลิปกับ EasySlip... ♡';
       subEl.textContent = 'กรุณารอสักครู่นะคะ ระบบกำลังตรวจสอบสลิปอัตโนมัติ';
 
-      const reader = new FileReader();
-      reader.onload = async e => {
-        const img = new Image();
-        img.onload = async () => {
-          try {
-            const canvas = document.getElementById('qrCanvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0, img.width, img.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      try {
+        // 1. ส่งไฟล์รูปภาพโดยตรงผ่าน FormData
+        const formData = new FormData();
+        formData.append('file', file);
 
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            if (!code || !code.data) {
-              alert('ไม่พบ QR Code ในสลิป กรุณาใช้สลิปโอนเงินที่มี QR Code ชัดเจนนะคะ ♡');
-              return;
-            }
+        const response = await fetch('https://developer.easyslip.com/api/v1/verify', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${EASYSLIP_API_KEY}`
+          },
+          body: formData
+        });
 
-            const qrPayload = code.data;
+        const res = await response.json();
 
-            // 1. ส่งข้อมูลตรวจสอบไปยัง EasySlip API
-            const response = await fetch('https://developer.easyslip.com/api/v1/verify', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${EASYSLIP_API_KEY}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ 
-                payload: qrPayload 
-              })
-            });
+        // เช็คการตอบกลับจาก EasySlip
+        if (res.status !== 200 || !res.data) {
+          const errMsg = res.message || 'สลิปไม่ถูกต้อง หรือไม่พบข้อมูลในระบบธนาคารค่ะ ♡';
+          alert(errMsg);
+          return;
+        }
 
-            const res = await response.json();
+        // 2. ดึงยอดเงินจริงและรหัสธุรกรรมจาก EasySlip
+        const slipData = res.data;
+        const amount = parseFloat(slipData.amount ? (slipData.amount.amount || slipData.amount) : 0);
+        const transRef = slipData.transRef || generateSlipHash(file.name + file.size + amount);
 
-            // เช็คสถานะการตอบกลับจาก EasySlip
-            if (res.status !== 200 || !res.data) {
-              const errMsg = res.message || 'สลิปไม่ถูกต้อง หรือไม่พบข้อมูลในระบบธนาคารค่ะ ♡';
-              alert(errMsg);
-              return;
-            }
+        if (!amount || isNaN(amount) || amount <= 0) {
+          alert('ไม่สามารถอ่านยอดเงินจากสลิปได้ กรุณาติดต่อแอดมินนะคะ ♡');
+          return;
+        }
 
-            // 2. ดึงยอดเงินจริงและรหัสอ้างอิงธุรกรรม
-            const slipData = res.data;
-            const amount = parseFloat(slipData.amount ? slipData.amount.amount : 0);
-            const transRef = slipData.transRef || generateSlipHash(qrPayload);
+        // 3. ป้องกันการใช้สลิปซ้ำผ่าน Firestore
+        const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
+        if (slipDoc.exists) {
+          alert('สลิปนี้เคยใช้งานเติมเงินไปแล้ว ไม่สามารถใช้ซ้ำได้ค่ะ ♡');
+          return;
+        }
 
-            if (!amount || isNaN(amount) || amount <= 0) {
-              alert('ไม่สามารถอ่านยอดเงินจากสลิปได้ กรุณาติดต่อแอดมินนะคะ ♡');
-              return;
-            }
+        // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
+        await db.runTransaction(async t => {
+          const uRef = db.collection(DB_USERS).doc(currentUser.docId);
+          const uDoc = await t.get(uRef);
+          const curBal = (uDoc.data() && uDoc.data().balance) || 0;
 
-            // 3. ป้องกันการใช้สลิปซ้ำผ่าน Firestore
-            const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
-            if (slipDoc.exists) {
-              alert('สลิปนี้เคยใช้งานเติมเงินไปแล้ว ไม่สามารถใช้ซ้ำได้ค่ะ ♡');
-              return;
-            }
+          t.update(uRef, { balance: curBal + amount });
+          t.set(db.collection(DB_SLIPS).doc(transRef), {
+            username: currentUser.username,
+            amount: amount,
+            transRef: transRef,
+            bank: (slipData.sender && slipData.sender.bank && slipData.sender.bank.name) || 'THMB',
+            usedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        });
 
-            // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
-            await db.runTransaction(async t => {
-              const uRef = db.collection(DB_USERS).doc(currentUser.docId);
-              const uDoc = await t.get(uRef);
-              const curBal = (uDoc.data() && uDoc.data().balance) || 0;
+        alert(`ตรวจสลิปสำเร็จเรียบร้อยแล้วค่ะ!\nระบบเติมเงินจำนวน ฿${amount.toFixed(2)} เข้ากระเป๋าของคุณทันที ♡`);
 
-              t.update(uRef, { balance: curBal + amount });
-              t.set(db.collection(DB_SLIPS).doc(transRef), {
-                username: currentUser.username,
-                amount: amount,
-                transRef: transRef,
-                bank: (slipData.sender && slipData.sender.bank && slipData.sender.bank.name) || 'THMB',
-                usedAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-            });
-
-            alert(`ตรวจสลิปสำเร็จเรียบร้อยแล้วค่ะ!\nระบบเติมเงินจำนวน ฿${amount.toFixed(2)} เข้ากระเป๋าของคุณทันที ♡`);
-
-          } catch (err) {
-            alert('เกิดข้อผิดพลาดในการตรวจสอบสลิป: ' + err.message);
-          } finally {
-            titleEl.textContent = origTitle;
-            subEl.textContent = origSub;
-            document.getElementById('slipFileInput').value = '';
-          }
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการตรวจสอบสลิป: ' + err.message);
+      } finally {
+        titleEl.textContent = origTitle;
+        subEl.textContent = origSub;
+        document.getElementById('slipFileInput').value = '';
+      }
     }
 
     function copyText(str, msg) {
