@@ -411,7 +411,7 @@
       background: var(--c-soft);
     }
 
-    /* หน้า 3: เติมเงิน & แนบสลิป (สีดำพาสเทล) */
+    /* หน้า 3: เติมเงิน & แนบสลิป & ซองอั่งเปา */
     .art-text-box {
       background: #ffffff;
       border: 1.5px dashed var(--c-border);
@@ -442,6 +442,16 @@
     }
     .copy-pill-btn:active { background: var(--c-soft); }
 
+    .voucher-box-card {
+      background: #ffffff;
+      border: 1.5px solid var(--c-border);
+      border-radius: 20px;
+      padding: 16px;
+      margin-top: 14px;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+
     .slip-uploader-box {
       border: 2px dashed var(--c-main);
       border-radius: 22px;
@@ -468,7 +478,13 @@
       justify-content: space-between;
       font-size: 14px;
       font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .order-time-tag {
+      font-size: 11px;
+      color: var(--text-muted);
       margin-bottom: 8px;
+      display: block;
     }
     .order-code-box {
       background: #fffafc;
@@ -645,17 +661,31 @@
         </div>
 
         <!-- ช่องใส่ฟอร์มโน้ตสลิป -->
-        <div class="art-text-box" style="margin-top:12px;">┄ 𓂂♡ เค้ารบกวนตัวแทน𓈒 ִֺֺ🪽𓈒 
-      ׅ  𓈒ׅโน๊ตสลิปให้เค้าทีนะคะ𓂂ֺֺ
-              ﹝ 𓈒ׅตัวแทนโฮชิ𓈒﹞
+        <div class="art-text-box" style="margin-top:12px;">┄ 𓂂♡ เค้ารบกวนตัวแทน𓈒 ִֺֺ🪽𓈒 
+     ׅ  𓈒ׅโน๊ตสลิปให้เค้าทีนะคะ𓂂ֺֺ
+             ﹝ 𓈒ׅตัวแทนโฮชิ𓈒﹞
  ⢿ 𓈒 เพื่อป้องกันการโดนแอบอ้าง
- 𓂂ִֺֺหากลืมโน๊ตให้โอนเพิ่มมา 𓈒0.01𓈒ִ  
+ 𓂂ִֺֺหากลืมโน๊ตให้โอนเพิ่มมา 𓈒0.01𓈒ִ  
     𓈒ִ♡ พร้อมโน๊ตสลิปนะคะ 𓈒 👀</div>
 
         <!-- กล่องคัดลอกคำโน้ตสลิป -->
         <div class="copy-pill-btn" onclick="copyText('ตัวแทนโฮชิ', 'คัดลอกคำโน้ตสลิปแล้ว ♡')">
           <span style="font-weight:600;">ตัวแทนโฮชิ</span>
           <span style="color:var(--c-main) !important; -webkit-text-fill-color:var(--c-main) !important; font-size:12px;">คัดลอก ♡</span>
+        </div>
+
+        <!-- กล่องเติมเงินผ่านซองของขวัญ TrueMoney Wallet อัตโนมัติ -->
+        <div class="voucher-box-card">
+          <div style="font-size:14px; font-weight:700; color:var(--c-main); text-align:center; margin-bottom:4px;">
+            🧧 เติมเงินด้วยซองของขวัญ TrueMoney (อัตโนมัติ) ♡
+          </div>
+          <div style="font-size:11.5px; color:var(--text-muted); text-align:center; margin-bottom:10px;">
+            สร้างซองของขวัญแล้ววางลิงก์ซองด้านล่าง ระบบจะรับเงินเข้าสู่กระเป๋าทันทีค่ะ
+          </div>
+          <input type="text" id="voucherInput" class="input-field" placeholder="วางลิงก์ซอง เช่น https://gift.truemoney.com/campaign/?v=..." style="margin-bottom:8px;">
+          <button type="button" class="btn-main" id="btnRedeemVoucher" onclick="handleRedeemVoucher()" style="margin-top:0;">
+            ยืนยันการรับซองเติมเงิน ♡
+          </button>
         </div>
 
         <!-- แนบสลิปโอนเงิน (ตรวจยอดเงินอัตโนมัติผ่าน EasySlip) -->
@@ -765,9 +795,12 @@
     const DB_ORDERS = "nonghoshi_orders";
     const DB_USERS = "nonghoshi_users";
     const DB_SLIPS = "nonghoshi_slips";
+    const DB_VOUCHERS = "nonghoshi_vouchers";
 
     // API Key จาก EasySlip
     const EASYSLIP_API_KEY = "7e7cd86a-4f08-448a-83b5-a9c90c81144d";
+    // เบอร์ TrueMoney Wallet ปลายทางที่รับซองของร้าน
+    const SHOP_WALLET_PHONE = "0640923501";
 
     let currentUser = null;
     let userData = { balance: 0, role: "user" };
@@ -1070,7 +1103,20 @@
     }
     function closeAppModal() { document.getElementById('appDetailModal').classList.remove('open'); }
 
-    // สั่งซื้อแอพ
+    // ฟังก์ชันแปลงวันที่-เวลาเป็นฟอร์แมตภาษาไทย
+    function formatThaiDateTime(dateObj) {
+      if (!dateObj) return '';
+      const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      const d = dateObj.getDate();
+      const m = months[dateObj.getMonth()];
+      const y = dateObj.getFullYear() + 543;
+      const hh = String(dateObj.getHours()).padStart(2, '0');
+      const mm = String(dateObj.getMinutes()).padStart(2, '0');
+      const ss = String(dateObj.getSeconds()).padStart(2, '0');
+      return `${d} ${m} ${y} เวลา ${hh}:${mm}:${ss} น.`;
+    }
+
+    // สั่งซื้อแอพ พร้อมบันทึกวันที่-เวลา
     async function buySelectedPlan() {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนสั่งซื้อนะคะ ♡');
@@ -1104,6 +1150,9 @@
       const appDocRef = db.collection(DB_APPS).doc(app.id);
       const userDocRef = db.collection(DB_USERS).doc(currentUser.docId);
 
+      const nowDate = new Date();
+      const thaiDateTimeStr = formatThaiDateTime(nowDate);
+
       try {
         await db.runTransaction(async t => {
           const appDoc = await t.get(appDocRef);
@@ -1132,6 +1181,7 @@
             price: actualPrice,
             isAgentPrice: ((userRole === 'agent' || userRole === 'admin') && targetPlan.agentPrice),
             code: deliveredCode,
+            purchasedAtText: thaiDateTimeStr,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           });
         });
@@ -1147,7 +1197,7 @@
       }
     }
 
-    // ประวัติการสั่งซื้อ
+    // ประวัติการสั่งซื้อ (แสดงวันที่และเวลาที่ซื้อ)
     function loadOrderHistory(username) {
       if (orderUnsub) orderUnsub();
       
@@ -1175,12 +1225,20 @@
         let html = '';
         orders.forEach((d, idx) => {
           const tag = d.isAgentPrice ? ' <span style="font-size:11px; color:var(--agent-gold);">[ราคาส่ง]</span>' : '';
+          
+          let dateDisplay = d.purchasedAtText;
+          if (!dateDisplay && d.createdAt) {
+            const rawTime = d.createdAt.toMillis ? d.createdAt.toMillis() : d.createdAt.seconds * 1000;
+            dateDisplay = formatThaiDateTime(new Date(rawTime));
+          }
+
           html += `
             <div class="order-history-card">
               <div class="order-header-row">
                 <span style="color:var(--c-main);">${d.appName} (${d.planName})${tag}</span>
                 <span>฿${d.price}</span>
               </div>
+              ${dateDisplay ? `<span class="order-time-tag">🕒 วันที่สั่งซื้อ: ${dateDisplay}</span>` : ''}
               <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600;">ข้อมูลแบบฟอร์มเข้าใช้งานของลูกค้า ♡:</div>
               <div class="order-code-box" id="order-box-${idx}">${escapeHtml(d.code)}</div>
               <button type="button" class="order-copy-code-btn" onclick="copyFullOrderForm(${idx})">คัดลอกแบบฟอร์มทั้งหมด ♡</button>
@@ -1209,6 +1267,100 @@
       });
     }
 
+    // ฟังก์ชันดึงรหัส Voucher Hash จาก URL ของซองของขวัญ
+    function extractVoucherCode(inputStr) {
+      if (!inputStr) return null;
+      const clean = inputStr.trim();
+      const match = clean.match(/[?&]v=([a-zA-Z0-9]+)/);
+      if (match && match[1]) return match[1];
+      if (/^[a-zA-Z0-9]{15,40}$/.test(clean)) return clean;
+      return null;
+    }
+
+    // ระบบรับซองของขวัญ TrueMoney Wallet อัตโนมัติ
+    async function handleRedeemVoucher() {
+      if (!currentUser) {
+        alert('กรุณาเข้าสู่ระบบก่อนเติมเงินด้วยซองนะคะ ♡');
+        openLoginModal();
+        return;
+      }
+
+      const voucherInput = document.getElementById('voucherInput');
+      const voucherRaw = voucherInput.value.trim();
+      if (!voucherRaw) {
+        return alert('กรุณาวางลิงก์ซองของขวัญก่อนกดรับนะคะ ♡');
+      }
+
+      const voucherCode = extractVoucherCode(voucherRaw);
+      if (!voucherCode) {
+        return alert('รูปแบบลิงก์ซองของขวัญไม่ถูกต้อง กรุณาคัดลอกลิงก์ซองจากทรูมันนี่วอลเล็ทมาให้ครบถ้วนนะคะ ♡');
+      }
+
+      // เช็คซองซ้ำใน Firestore
+      const voucherDoc = await db.collection(DB_VOUCHERS).doc(voucherCode).get();
+      if (voucherDoc.exists) {
+        return alert('ซองของขวัญนี้เคยใช้งานเติมเงินไปแล้วค่ะ ไม่สามารถใช้ซ้ำได้ ♡');
+      }
+
+      const btn = document.getElementById('btnRedeemVoucher');
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'กำลังเปิดรับซองและตรวจยอดเงิน... ♡';
+
+      try {
+        // ยิงตรวจสอบและรับซองผ่าน TrueMoney Gateway
+        const apiUrl = `https://tmn-angpao.pages.dev/api/${SHOP_WALLET_PHONE}/${voucherCode}`;
+        const resp = await fetch(apiUrl);
+        const resData = await resp.json();
+
+        // ตรวจสอบผลการรับซอง
+        if (resData.status && (resData.status.code === 'SUCCESS' || resData.status.code === 200 || resData.status.code === 'OK') || resData.data) {
+          const voucherInfo = resData.data || resData;
+          let amount = 0;
+
+          if (voucherInfo.my_ticket && voucherInfo.my_ticket.amount_baht) {
+            amount = parseFloat(voucherInfo.my_ticket.amount_baht);
+          } else if (voucherInfo.voucher && voucherInfo.voucher.amount_baht) {
+            amount = parseFloat(voucherInfo.voucher.amount_baht);
+          } else if (voucherInfo.amount) {
+            amount = parseFloat(voucherInfo.amount);
+          }
+
+          if (!amount || isNaN(amount) || amount <= 0) {
+            throw new Error('ไม่สามารถตรวจสอบจำนวนเงินในซองได้ กรุณาติดต่อแอดมินค่ะ ♡');
+          }
+
+          // เติมเงินเข้ากระเป๋าและบันทึกประวัติซองทันที
+          await db.runTransaction(async t => {
+            const uRef = db.collection(DB_USERS).doc(currentUser.docId);
+            const uDoc = await t.get(uRef);
+            const curBal = (uDoc.data() && uDoc.data().balance) || 0;
+
+            t.update(uRef, { balance: curBal + amount });
+            t.set(db.collection(DB_VOUCHERS).doc(voucherCode), {
+              username: currentUser.username,
+              voucherCode: voucherCode,
+              amount: amount,
+              redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          });
+
+          voucherInput.value = '';
+          alert(`รับซองสำเร็จเรียบร้อยแล้วค่ะ!\nระบบเติมเงินจำนวน ฿${amount.toFixed(2)} เข้ากระเป๋าของคุณทันที ♡`);
+
+        } else {
+          const errMsg = (resData.status && resData.status.message) || resData.message || 'ซองของขวัญไม่ถูกต้อง ถูกเปิดไปแล้ว หรือหมดอายุค่ะ ♡';
+          alert(errMsg);
+        }
+
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการรับซอง: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
     function generateSlipHash(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -1219,7 +1371,7 @@
       return 'slip_' + Math.abs(hash);
     }
 
-    // ตรวจสอบสลิปผ่าน EasySlip API (ส่งไฟล์รูปภาพจริงด้วย FormData)
+    // ตรวจสอบสลิปผ่าน EasySlip API
     async function handleSlipUpload(event) {
       if (!currentUser) {
         alert('กรุณาเข้าสู่ระบบก่อนแนบสลิปเติมเงินนะคะ ♡');
@@ -1239,7 +1391,6 @@
       subEl.textContent = 'กรุณารอสักครู่นะคะ ระบบกำลังตรวจสอบสลิปอัตโนมัติ';
 
       try {
-        // 1. ส่งไฟล์รูปภาพโดยตรงผ่าน FormData
         const formData = new FormData();
         formData.append('file', file);
 
@@ -1253,14 +1404,12 @@
 
         const res = await response.json();
 
-        // เช็คการตอบกลับจาก EasySlip
         if (res.status !== 200 || !res.data) {
           const errMsg = res.message || 'สลิปไม่ถูกต้อง หรือไม่พบข้อมูลในระบบธนาคารค่ะ ♡';
           alert(errMsg);
           return;
         }
 
-        // 2. ดึงยอดเงินจริงและรหัสธุรกรรมจาก EasySlip
         const slipData = res.data;
         const amount = parseFloat(slipData.amount ? (slipData.amount.amount || slipData.amount) : 0);
         const transRef = slipData.transRef || generateSlipHash(file.name + file.size + amount);
@@ -1270,14 +1419,12 @@
           return;
         }
 
-        // 3. ป้องกันการใช้สลิปซ้ำผ่าน Firestore
         const slipDoc = await db.collection(DB_SLIPS).doc(transRef).get();
         if (slipDoc.exists) {
           alert('สลิปนี้เคยใช้งานเติมเงินไปแล้ว ไม่สามารถใช้ซ้ำได้ค่ะ ♡');
           return;
         }
 
-        // 4. บันทึกและเติมเงินเข้ากระเป๋าอัตโนมัติทันที
         await db.runTransaction(async t => {
           const uRef = db.collection(DB_USERS).doc(currentUser.docId);
           const uDoc = await t.get(uRef);
